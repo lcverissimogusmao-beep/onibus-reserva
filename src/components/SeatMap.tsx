@@ -3,7 +3,7 @@
 import React from 'react';
 
 interface SeatMapProps {
-  seats?: { id: number; status: string }[];
+  seats?: { id: number; status: string; passenger?: string }[];
   selectedSeats?: number[];
   onSelectSeat?: (seatId: number) => void;
 }
@@ -11,6 +11,22 @@ interface SeatMapProps {
 export default function SeatMap({ seats = [], selectedSeats = [], onSelectSeat }: SeatMapProps) {
   return (
     <div className="flex flex-col items-center p-6 bg-slate-900 text-white rounded-xl shadow-xl max-w-md mx-auto">
+      {/* Legenda de Cores */}
+      <div className="flex gap-4 mb-6 text-xs bg-slate-800 p-2 rounded-lg border border-slate-700 w-full justify-around">
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 bg-yellow-500 rounded"></div>
+          <span>Disponível</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 bg-blue-600 rounded"></div>
+          <span>Selecionado</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 bg-slate-600 rounded"></div>
+          <span>Ocupado</span>
+        </div>
+      </div>
+
       {/* 🚍 CABINE DO MOTORISTA */}
       <div className="w-full flex justify-between items-center bg-slate-800 p-3 rounded-t-3xl border-b-2 border-slate-700 mb-6">
         <span className="text-xs tracking-wider text-slate-400 font-semibold">FRENTE / MOTORISTA</span>
@@ -136,22 +152,24 @@ interface SeatProps {
 }
 
 function Seat({ id, seats = [], selectedSeats = [], onClick }: SeatProps) {
-  // Verifica se o assento está ocupado na base de dados ou selecionado localmente
   const seatData = seats.find((s) => s.id === id);
   const isOccupied = seatData?.status === 'occupied';
   const isSelected = selectedSeats.includes(id);
 
-  let bgColor = "bg-yellow-500 hover:bg-yellow-400 text-slate-950 border-b-2 border-red-600";
+  // Cores atualizadas conforme pedido:
+  // Disponível = amarelo original
+  // Selecionado = azul
+  // Ocupado = cinza
+  let bgColor = "bg-yellow-500 hover:bg-yellow-400 text-slate-950 border-b-2 border-amber-600";
   
   if (isOccupied) {
-    bgColor = "bg-red-700 text-white cursor-not-allowed opacity-60";
+    bgColor = "bg-slate-700 text-slate-400 cursor-not-allowed border-b-2 border-slate-800";
   } else if (isSelected) {
-    bgColor = "bg-green-600 text-white border-b-2 border-green-800 scale-95";
+    bgColor = "bg-blue-600 hover:bg-blue-500 text-white border-b-2 border-blue-800 scale-95";
   }
 
   return (
     <button 
-      disabled={isOccupied}
       onClick={() => onClick && onClick(id)}
       className={`font-bold text-xs py-2 rounded shadow transition-all w-full ${bgColor}`}
     >
