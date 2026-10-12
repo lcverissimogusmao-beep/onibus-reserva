@@ -15,7 +15,7 @@ export default function Home() {
   const [adminPassword, setAdminPassword] = useState('');
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
 
-  // Carrega os assentos da base de dados ao abrir a página
+  // Função para carregar os assentos da base de dados
   const fetchSeats = async () => {
     const { data, error } = await supabase.from('seats').select('*');
     if (data && !error) {
@@ -27,7 +27,7 @@ export default function Home() {
     fetchSeats();
   }, []);
 
-  // Selecionar ou desselionar assento localmente (se não estiver ocupado)
+  // Selecionar ou desselionar assento localmente
   const handleSelectSeat = (seatId: number) => {
     const seatData = seatsFromDB.find((s) => s.id === seatId);
     if (seatData?.status === 'occupied') {
@@ -57,15 +57,25 @@ export default function Home() {
 
     try {
       for (const seatId of selectedSeats) {
-        await supabase
+        // Tenta atualizar se já existir
+        const { error: updateError } = await supabase
           .from('seats')
-          .upsert({ id: seatId, status: 'occupied', passenger: passengerName });
+          .update({ status: 'occupied', passenger: passengerName })
+          .eq('id', seatId);
+
+        // Se não existir, insere
+        if (updateError) {
+          await supabase
+            .from('seats')
+            .insert({ id: seatId, status: 'occupied', passenger: passengerName });
+        }
       }
 
       alert('Reserva efetuada com sucesso!');
       setSelectedSeats([]);
       setPassengerName('');
       await fetchSeats();
+
     } catch (err) {
       console.error(err);
       alert('Erro ao realizar a reserva.');
@@ -79,14 +89,12 @@ export default function Home() {
     if (!confirm(`Tens a certeza que queres liberar o assento ${seatId}?`)) return;
 
     try {
-      // Atualiza o status no Supabase para 'available' ou remove o registo
       const { error } = await supabase
         .from('seats')
         .update({ status: 'available', passenger: null })
         .eq('id', seatId);
 
       if (error) {
-        // Se a linha não existir na tabela, podes optar por apagá-la ou inserir como available
         await supabase.from('seats').upsert({ id: seatId, status: 'available', passenger: null });
       }
 
@@ -98,10 +106,10 @@ export default function Home() {
     }
   };
 
-  // Validar senha do Administrador (podes alterar "minhasenha123" para a senha que quiseres)
+  // Validar senha do Administrador
   const handleAdminLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (adminPassword === '123456') { // Altera aqui a tua senha de admin
+    if (adminPassword === '123456') {
       setIsAdminAuthenticated(true);
       alert('Modo Administrador ativado!');
     } else {
@@ -147,7 +155,7 @@ export default function Home() {
         </button>
       </div>
 
-      {/* Área de Administração (Liberar Assentos Ocupados) */}
+      {/* Área de Administração */}
       <div className="max-w-md mx-auto mt-8 p-4 bg-slate-900/50 rounded-xl border border-slate-800 text-center">
         {!isAdminOpen ? (
           <button 
@@ -173,7 +181,7 @@ export default function Home() {
           </form>
         ) : (
           <div className="mt-3">
-            <p className="text-xs font-bold text-green-400 mb-2">🔓 Modo Admin Ativo: Clica num assento ocupado abaixo para o liberar:</p>
+            <p className="text-xs font-bold text-green-400 mb-2">🔓 Modo Admin Ativo: Clica num assento para o liberar:</p>
             <div className="flex flex-wrap gap-1.5 justify-center max-h-40 overflow-y-auto p-2 bg-slate-950 rounded">
               {seatsFromDB.filter(s => s.status === 'occupied').length === 0 ? (
                 <p className="text-xs text-slate-500">Nenhum assento ocupado no momento.</p>
