@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import SeatMap from '@/components/SeatMap';
 import { supabase } from '@/lib/supabase';
 
+const SeatMapComponent = SeatMap as React.ComponentType<any>;
+
 export default function Home() {
   const [selectedSeats, setSelectedSeats] = useState<number[]>([]);
   const [seatsFromDB, setSeatsFromDB] = useState<{ id: number; status: string; passenger?: string }[]>([]);
@@ -122,7 +124,7 @@ export default function Home() {
       <h1 className="text-2xl font-bold text-center mb-6 text-amber-400">Reserva de Assentos - Autocarro</h1>
       
       {/* Mapa de Assentos */}
-      <SeatMap 
+      <SeatMapComponent 
         seats={seatsFromDB} 
         selectedSeats={selectedSeats} 
         onSelectSeat={handleSelectSeat} 

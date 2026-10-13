@@ -1,179 +1,246 @@
-'use client';
+'use client'
 
-import React from 'react';
+import { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
 
-interface SeatMapProps {
-  seats?: { id: number; status: string; passenger?: string }[];
-  selectedSeats?: number[];
-  onSelectSeat?: (seatId: number) => void;
+interface Reserva {
+  id: number
+  assento: string
+  nome: string
+  documento: string
+  email: string
 }
 
-export default function SeatMap({ seats = [], selectedSeats = [], onSelectSeat }: SeatMapProps) {
-  return (
-    <div className="flex flex-col items-center p-6 bg-slate-900 text-white rounded-xl shadow-xl max-w-md mx-auto">
-      {/* Legenda de Cores */}
-      <div className="flex gap-4 mb-6 text-xs bg-slate-800 p-2 rounded-lg border border-slate-700 w-full justify-around">
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 bg-yellow-500 rounded"></div>
-          <span>Disponível</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 bg-blue-600 rounded"></div>
-          <span>Selecionado</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 bg-slate-600 rounded"></div>
-          <span>Ocupado</span>
-        </div>
-      </div>
+export default function SeatMap() {
+  const [reservas, setReservas] = useState<Reserva[]>([])
+  const [selectedSeat, setSelectedSeat] = useState<string | null>(null)
+  const [nome, setNome] = useState('')
+  const [documento, setDocumento] = useState('')
+  const [email, setEmail] = useState('')
+  const [loading, setLoading] = useState(false)
 
-      {/* 🚍 CABINE DO MOTORISTA */}
-      <div className="w-full flex justify-between items-center bg-slate-800 p-3 rounded-t-3xl border-b-2 border-slate-700 mb-6">
-        <span className="text-xs tracking-wider text-slate-400 font-semibold">FRENTE / MOTORISTA</span>
-        <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs"> 🚗 </div>
-      </div>
+  const rows = Array.from({ length: 15 }, (_, rowIndex) => {
+    const base = rowIndex * 4
+    return {
+      left1: `A${base + 1}`,
+      left2: `A${base + 2}`,
+      right1: `A${base + 4}`,
+      right2: `A${base + 3}`,
+    }
+  })
 
-      {/* 🏢 PISO SUPERIOR */}
-      <div className="w-full bg-slate-800/60 p-4 rounded-xl border border-slate-700 mb-6">
-        <h3 className="text-center text-amber-400 font-bold mb-4 tracking-wide text-sm border-b border-slate-700 pb-2">
-          PISO SUPERIOR
-        </h3>
+  const fetchReservas = async () => {
+    const { data, error } = await supabase.from('reservas').select('*')
+    if (error) {
+      console.error('Erro ao buscar reservas:', error.message)
+    } else if (data) {
+      setReservas(data)
+    }
+  }
 
-        <div className="space-y-2">
-          {/* Fila 1 */}
-          <div className="grid grid-cols-5 gap-2 items-center text-center">
-            <Seat id={1} seats={seats} selectedSeats={selectedSeats} onClick={onSelectSeat} />
-            <Seat id={2} seats={seats} selectedSeats={selectedSeats} onClick={onSelectSeat} />
-            <div className="text-slate-600 text-xs">|</div>
-            <Seat id={4} seats={seats} selectedSeats={selectedSeats} onClick={onSelectSeat} />
-            <Seat id={3} seats={seats} selectedSeats={selectedSeats} onClick={onSelectSeat} />
-          </div>
-          <div className="grid grid-cols-5 gap-2 items-center text-center">
-            <Seat id={5} seats={seats} selectedSeats={selectedSeats} onClick={onSelectSeat} />
-            <Seat id={6} seats={seats} selectedSeats={selectedSeats} onClick={onSelectSeat} />
-            <div className="text-slate-600 text-xs">|</div>
-            <Seat id={8} seats={seats} selectedSeats={selectedSeats} onClick={onSelectSeat} />
-            <Seat id={7} seats={seats} selectedSeats={selectedSeats} onClick={onSelectSeat} />
-          </div>
-          <div className="grid grid-cols-5 gap-2 items-center text-center">
-            <Seat id={9} seats={seats} selectedSeats={selectedSeats} onClick={onSelectSeat} />
-            <Seat id={10} seats={seats} selectedSeats={selectedSeats} onClick={onSelectSeat} />
-            <div className="text-slate-600 text-xs">|</div>
-            <Seat id={12} seats={seats} selectedSeats={selectedSeats} onClick={onSelectSeat} />
-            <Seat id={11} seats={seats} selectedSeats={selectedSeats} onClick={onSelectSeat} />
-          </div>
+  useEffect(() => {
+    fetchReservas()
+  }, [])
 
-          {/* Bloco DD (Escada) */}
-          <div className="grid grid-cols-5 gap-2 items-center text-center bg-red-900/40 p-2 rounded border border-red-500/30">
-            <Seat id={13} seats={seats} selectedSeats={selectedSeats} onClick={onSelectSeat} />
-            <Seat id={14} seats={seats} selectedSeats={selectedSeats} onClick={onSelectSeat} />
-            <div className="text-red-400 text-xs font-bold">ESCADA</div>
-            <div className="col-span-2 bg-red-600 text-white text-xs font-bold py-2 rounded flex items-center justify-center">
-              DD
-            </div>
-          </div>
+  const getAssentoOcupado = (seatNumber: string) => {
+    return reservas.find((r) => r.assento === seatNumber)
+  }
 
-          {/* Filas seguintes do Piso Superior */}
-          {[
-            { l1: 15, l2: 16, r1: 20, r2: 19 },
-            { l1: 17, l2: 18, r1: 24, r2: 23 },
-            { l1: 21, l2: 22, r1: 28, r2: 27 },
-            { l1: 25, l2: 26, r1: 32, r2: 31 },
-            { l1: 29, l2: 30, r1: 36, r2: 35 },
-            { l1: 33, l2: 34, r1: 40, r2: 39 },
-            { l1: 37, l2: 38, r1: 44, r2: 43 },
-          ].map((row, index) => (
-            <div key={index} className="grid grid-cols-5 gap-2 items-center text-center">
-              <Seat id={row.l1} seats={seats} selectedSeats={selectedSeats} onClick={onSelectSeat} />
-              <Seat id={row.l2} seats={seats} selectedSeats={selectedSeats} onClick={onSelectSeat} />
-              <div className="text-slate-600 text-xs">|</div>
-              <Seat id={row.r1} seats={seats} selectedSeats={selectedSeats} onClick={onSelectSeat} />
-              <Seat id={row.r2} seats={seats} selectedSeats={selectedSeats} onClick={onSelectSeat} />
-            </div>
-          ))}
+  // Função atualizada sem pedir nenhuma senha
+  const handleSeatClick = async (seatNumber: string) => {
+    const ocupado = getAssentoOcupado(seatNumber)
 
-          {/* Bloco BANHEIRO */}
-          <div className="grid grid-cols-5 gap-2 items-center text-center bg-amber-900/30 p-2 rounded border border-amber-500/30 mt-3">
-            <Seat id={45} seats={seats} selectedSeats={selectedSeats} onClick={onSelectSeat} />
-            <Seat id={46} seats={seats} selectedSeats={selectedSeats} onClick={onSelectSeat} />
-            <div className="text-amber-400 text-xs font-bold">WC</div>
-            <div className="col-span-2 bg-amber-600 text-white text-xs font-bold py-2 rounded flex items-center justify-center">
-              BANHEIRO 🚻
-            </div>
-          </div>
-          <div className="grid grid-cols-5 gap-2 items-center text-center">
-            <Seat id={47} seats={seats} selectedSeats={selectedSeats} onClick={onSelectSeat} />
-            <Seat id={48} seats={seats} selectedSeats={selectedSeats} onClick={onSelectSeat} />
-            <div className="text-slate-600 text-xs">|</div>
-            <div className="col-span-2"></div>
-          </div>
-        </div>
-      </div>
+    if (ocupado) {
+      const confirmar = window.confirm(`O assento ${seatNumber} está reservado por ${ocupado.nome}. Deseja cancelar esta reserva?`)
+      if (!confirmar) return
 
-      {/* 🔻 DIVISÃO DE PISOS */}
-      <div className="w-full text-center my-2 border-t border-dashed border-slate-500 pt-2">
-        <span className="text-xs uppercase tracking-widest text-amber-400 font-bold bg-slate-800 px-3 py-1 rounded-full border border-slate-700">
-          Piso Inferior
+      setLoading(true)
+      const { error } = await supabase.from('reservas').delete().eq('id', ocupado.id)
+      setLoading(false)
+
+      if (error) {
+        alert('Erro ao cancelar reserva: ' + error.message)
+      } else {
+        alert(`Reserva do assento ${seatNumber} cancelada com sucesso!`)
+        fetchReservas()
+      }
+    } else {
+      setSelectedSeat(seatNumber)
+    }
+  }
+
+  const handleReserve = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedSeat) return
+
+    setLoading(true)
+
+    const { error } = await supabase.from('reservas').insert([
+      {
+        assento: selectedSeat,
+        nome,
+        documento,
+        email,
+      },
+    ])
+
+    setLoading(false)
+
+    if (error) {
+      alert('Erro ao realizar reserva: ' + error.message)
+    } else {
+      alert(`Assento ${selectedSeat} reservado com sucesso!`)
+      setSelectedSeat(null)
+      setNome('')
+      setDocumento('')
+      setEmail('')
+      fetchReservas()
+    }
+  }
+
+  const renderSeatButton = (seat: string) => {
+    const ocupado = getAssentoOcupado(seat)
+    const isSelected = selectedSeat === seat
+
+    let bgColor = 'bg-emerald-500 hover:bg-emerald-600 text-white'
+    if (ocupado) {
+      bgColor = 'bg-red-500 hover:bg-red-600 text-white cursor-pointer'
+    } else if (isSelected) {
+      bgColor = 'bg-blue-600 text-white ring-2 ring-blue-300'
+    }
+
+    return (
+      <button
+        key={seat}
+        onClick={() => handleSeatClick(seat)}
+        className={`py-3 px-1 rounded-lg font-medium transition-all flex flex-col items-center justify-center text-xs shadow-sm ${bgColor}`}
+      >
+        <span className="font-bold text-sm">{seat.replace('A', '')}</span>
+        <span className="text-[9px] font-semibold mt-0.5 text-white">
+          {ocupado ? 'Ocupado' : isSelected ? 'Selecionado' : 'Livre'}
         </span>
-      </div>
-
-      {/* 🏢 PISO INFERIOR (Assentos 49 a 60) */}
-      <div className="w-full bg-slate-800/60 p-4 rounded-xl border border-slate-700 mt-2">
-        <div className="space-y-2">
-          <div className="grid grid-cols-4 gap-2 items-center text-center">
-            <Seat id={49} seats={seats} selectedSeats={selectedSeats} onClick={onSelectSeat} />
-            <Seat id={50} seats={seats} selectedSeats={selectedSeats} onClick={onSelectSeat} />
-            <Seat id={52} seats={seats} selectedSeats={selectedSeats} onClick={onSelectSeat} />
-            <Seat id={51} seats={seats} selectedSeats={selectedSeats} onClick={onSelectSeat} />
-          </div>
-          <div className="grid grid-cols-4 gap-2 items-center text-center">
-            <Seat id={53} seats={seats} selectedSeats={selectedSeats} onClick={onSelectSeat} />
-            <Seat id={54} seats={seats} selectedSeats={selectedSeats} onClick={onSelectSeat} />
-            <Seat id={56} seats={seats} selectedSeats={selectedSeats} onClick={onSelectSeat} />
-            <Seat id={55} seats={seats} selectedSeats={selectedSeats} onClick={onSelectSeat} />
-          </div>
-          <div className="grid grid-cols-4 gap-2 items-center text-center">
-            <Seat id={57} seats={seats} selectedSeats={selectedSeats} onClick={onSelectSeat} />
-            <Seat id={58} seats={seats} selectedSeats={selectedSeats} onClick={onSelectSeat} />
-            <Seat id={60} seats={seats} selectedSeats={selectedSeats} onClick={onSelectSeat} />
-            <Seat id={59} seats={seats} selectedSeats={selectedSeats} onClick={onSelectSeat} />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-interface SeatProps {
-  id: number;
-  seats?: { id: number; status: string }[];
-  selectedSeats?: number[];
-  onClick?: (id: number) => void;
-}
-
-function Seat({ id, seats = [], selectedSeats = [], onClick }: SeatProps) {
-  const seatData = seats.find((s) => s.id === id);
-  const isOccupied = seatData?.status === 'occupied';
-  const isSelected = selectedSeats.includes(id);
-
-  // Cores atualizadas conforme pedido:
-  // Disponível = amarelo original
-  // Selecionado = azul
-  // Ocupado = cinza
-  let bgColor = "bg-yellow-500 hover:bg-yellow-400 text-slate-950 border-b-2 border-amber-600";
-  
-  if (isOccupied) {
-    bgColor = "bg-slate-700 text-slate-400 cursor-not-allowed border-b-2 border-slate-800";
-  } else if (isSelected) {
-    bgColor = "bg-blue-600 hover:bg-blue-500 text-white border-b-2 border-blue-800 scale-95";
+      </button>
+    )
   }
 
   return (
-    <button 
-      onClick={() => onClick && onClick(id)}
-      className={`font-bold text-xs py-2 rounded shadow transition-all w-full ${bgColor}`}
-    >
-      {id}
-    </button>
-  );
+    <div className="max-w-5xl mx-auto p-3 sm:p-6 md:p-8 bg-slate-900 min-h-screen text-slate-100">
+      <h1 className="text-xl sm:text-2xl font-bold text-center mb-2 text-white">
+        Mapa do Ônibus
+      </h1>
+      <p className="text-center text-xs sm:text-sm text-slate-400 mb-6">
+        Selecione uma poltrona disponível
+      </p>
+
+      <div className="flex flex-wrap justify-center gap-4 sm:gap-6 mb-6 text-xs sm:text-sm bg-slate-800 p-3 rounded-xl border border-slate-700">
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-emerald-500 rounded-md"></div>
+          <span className="text-slate-200">Livre</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-blue-600 rounded-md"></div>
+          <span className="text-slate-200">Selecionado</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-red-500 rounded-md"></div>
+          <span className="text-slate-200">Ocupado (Clique para cancelar)</span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 items-start">
+        <div className="lg:col-span-2 bg-slate-800 p-4 sm:p-6 rounded-2xl shadow-xl border border-slate-700">
+          <div className="text-center font-bold text-slate-300 mb-4 py-2 bg-slate-700/50 rounded-lg text-xs sm:text-sm tracking-wider uppercase">
+            Piso Superior 🚌
+          </div>
+          
+          <div className="max-h-[500px] overflow-y-auto pr-2 space-y-2">
+            {rows.map((row, idx) => (
+              <div key={idx} className="grid grid-cols-9 gap-1.5 items-center">
+                <div className="col-span-2 grid grid-cols-2 gap-1.5">
+                  {renderSeatButton(row.left1)}
+                  {renderSeatButton(row.left2)}
+                </div>
+
+                <div className="col-span-5 text-center text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-widest bg-slate-900/40 py-2.5 rounded">
+                  Corredor
+                </div>
+
+                <div className="col-span-2 grid grid-cols-2 gap-1.5">
+                  {renderSeatButton(row.right1)}
+                  {renderSeatButton(row.right2)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-slate-800 p-4 sm:p-6 rounded-2xl shadow-xl border border-slate-700 lg:sticky lg:top-6">
+          <h2 className="text-base sm:text-lg font-semibold mb-4 text-white">
+            {selectedSeat ? `Reservar Assento: ${selectedSeat.replace('A', '')}` : 'Selecione um assento'}
+          </h2>
+
+          {selectedSeat ? (
+            <form onSubmit={handleReserve} className="space-y-3 sm:space-y-4">
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-1">Nome Completo</label>
+                <input
+                  type="text"
+                  required
+                  value={nome}
+                  onChange={(e) => setNome(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white text-sm"
+                  placeholder="Ex: João da Silva"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-1">Documento (CPF/RG)</label>
+                <input
+                  type="text"
+                  required
+                  value={documento}
+                  onChange={(e) => setDocumento(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white text-sm"
+                  placeholder="Ex: 000.000.000-00"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-1">E-mail</label>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white text-sm"
+                  placeholder="exemplo@email.com"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition-colors disabled:opacity-50 text-sm shadow-md"
+                >
+                  {loading ? 'Salvando...' : 'Confirmar Reserva'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedSeat(null)}
+                  className="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-200 font-medium rounded-lg transition-colors text-sm"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          ) : (
+            <p className="text-slate-400 text-xs sm:text-sm leading-relaxed">
+              Toque em qualquer poltrona verde no mapa ao lado para preencher os dados de reserva, ou numa poltrona vermelha ocupada para cancelar diretamente.
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  )
 }
